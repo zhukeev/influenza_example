@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:influenza_example/CustomScrollBehavior.dart';
+import 'package:influenza_example/CustomScrollPhysics.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,7 +25,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   static const FULL_SCALE = 1.0;
-  PageController controller = PageController();
+  PageController controller = PageController(viewportFraction: .6);
   var currentPageValue = 0.0;
   var previousPage;
   static const images = [
@@ -35,12 +37,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
   ValueNotifier<double> pageNotifier;
 
+  ScrollPhysics _physics;
+
   @override
   void initState() {
     controller.addListener(() {
       setState(() {
         currentPageValue = controller.page;
       });
+
+      if (controller.position.haveDimensions && _physics == null) {
+        setState(() {
+          var dimension = controller.position.maxScrollExtent / (10 - 1);
+          _physics = CustomScrollPhysics(itemDimension: dimension);
+        });
+      }
     });
 
     previousPage = controller.initialPage;
@@ -69,6 +80,9 @@ class _MyHomePageState extends State<MyHomePage> {
     var imgUrl = images[position % images.length];
 
     return Container(
+      color: position % 2 == 0
+          ? Colors.blue.withOpacity(.2)
+          : Colors.pink.withOpacity(.2),
       child: Center(
           child: Container(
               width: MediaQuery.of(context).size.width * .8,
@@ -82,28 +96,38 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget buildPageView() {
     return Stack(
       children: <Widget>[
-        PageView.builder(
-            controller: controller,
-            itemCount: 50,
-            scrollDirection: Axis.vertical,
-            physics: BouncingScrollPhysics(),
-            itemBuilder: (context, position) {
-              if (position == currentPageValue.floor()) {
-                return Transform.scale(
-                  scale: (FULL_SCALE -
-                      (position - currentPageValue).abs()) /*scale*/,
-                  child: buildPage(position, 'from'),
-                );
-              } else if (position == currentPageValue.floor() + 1) {
-                return Transform.scale(
-                  scale: (FULL_SCALE -
-                      (position - currentPageValue).abs()) /*scale*/,
-                  child: buildPage(position, 'to'),
-                );
-              } else {
-                return buildPage(position, 'default');
-              }
-            }),
+        ScrollConfiguration(
+          behavior: MyBehavior(),
+          child: PageView.builder(
+              controller: controller,
+              itemCount: 10,
+              scrollDirection: Axis.vertical,
+              physics: _physics,
+              itemBuilder: (context, position) {
+                final scale =
+                    FULL_SCALE - (position - (currentPageValue)).abs();
+
+                if (position == currentPageValue.floor()) {
+                  return Transform.translate(
+                    offset: Offset(0.0, -36.0),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: buildPage(position, 'from'),
+                    ),
+                  );
+                } else if (position == currentPageValue.floor() + 1) {
+                  return Transform.translate(
+                    offset: Offset(0.0, -36.0),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: buildPage(position, 'to'),
+                    ),
+                  );
+                } else {
+                  return buildPage(position, 'default');
+                }
+              }),
+        ),
         Positioned(
           top: MediaQuery.of(context).size.height * .15,
           left: 16,

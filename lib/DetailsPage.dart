@@ -34,13 +34,13 @@ class _DetailsPageState extends State<DetailsPage> {
         body: Stack(
           children: <Widget>[
             Positioned(
-                right: -150,
+                right: -100,
                 top: 0,
                 bottom: 0,
                 child: Hero(
                   tag: widget.virus.image /*heroImageTag*/,
                   child: Transform.scale(
-                    scale: 2,
+                    scale: 3,
                     child: Transform.rotate(
                       angle: .8,
                       child: Container(
@@ -116,7 +116,7 @@ class _DetailsPageState extends State<DetailsPage> {
                             padding: const EdgeInsets.all(0),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15)),
-                            color: Palette.buttonBlue ,
+                            color: Palette.buttonBlue,
                             child: Text(
                               "Exit",
                               style:

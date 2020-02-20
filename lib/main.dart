@@ -3,11 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:influenza_example/CustomScrollBehavior.dart';
 import 'package:influenza_example/CustomScrollPhysics.dart';
-import 'package:influenza_example/FadePageRoute.dart';
 import 'package:influenza_example/model/Virus.dart';
 
 import 'DetailsPage.dart';
-
+import 'package:influenza_example/Constants.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -29,20 +28,20 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   static const FULL_SCALE = 1.0;
   PageController controller = PageController(viewportFraction: .4);
   var currentPageValue = 0.0;
   var previousPage;
 
-  static const Color buttonBlue = Color(0xFF450EFF);
-  static const Color bgGradientStart = Color(0xFF25252B);
-  static const Color bgGradientEnd = Color(0xFF111113);
 
   ValueNotifier<double> pageNotifier;
 
   ScrollPhysics _physics;
   double scale = 1.0;
+
+  AnimationController _heroAnimationController;
 
   @override
   void initState() {
@@ -62,6 +61,9 @@ class _MyHomePageState extends State<MyHomePage> {
     previousPage = controller.initialPage;
     pageNotifier = ValueNotifier(1.0);
 
+    _heroAnimationController =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500));
+
     super.initState();
   }
 
@@ -69,6 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void dispose() {
     controller.dispose();
     pageNotifier.dispose();
+    _heroAnimationController.dispose();
     super.dispose();
   }
 
@@ -80,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
               gradient: RadialGradient(
                   center: Alignment.topLeft,
                   radius: 2,
-                  colors: [bgGradientStart, bgGradientEnd])),
+                  colors: [Palette.bgGradientStart, Palette.bgGradientEnd])),
           child: buildPageView()),
     );
   }
@@ -99,25 +102,31 @@ class _MyHomePageState extends State<MyHomePage> {
         final Hero toHero = toHeroContext.widget;
 
         if (flightDirection == HeroFlightDirection.pop) {
-          return Transform.scale(
-            scale: FULL_SCALE - (position - (currentPageValue)).abs(),
+          return ScaleTransition(
+            scale: animation,
             child: toHero.child,
           );
         } else
-          return Transform.rotate(
+          return RotationTransition(
+            turns: animation,
             child: toHero.child,
-            angle: animation.value * .2,
           );
       },
       child: Container(
         child: Center(
-            child: Container(
-                width: MediaQuery.of(context).size.width * .2,
-                height: MediaQuery.of(context).size.width * .2,
+            child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+//                Text('$text'),
+            Container(
+                width: MediaQuery.of(context).size.width * .1,
+                height: MediaQuery.of(context).size.width * .1,
                 child: Image.asset(
                   imgUrl,
                   fit: BoxFit.cover,
-                ))),
+                )),
+          ],
+        )),
       ),
     );
   }
@@ -131,26 +140,31 @@ class _MyHomePageState extends State<MyHomePage> {
               controller: controller,
               itemCount: viruses.length,
               scrollDirection: Axis.vertical,
-              physics: _physics,
+
+//              physics:   _physics,
               itemBuilder: (context, position) {
-//                setState(() {
                 scale = FULL_SCALE - (position - (currentPageValue)).abs();
-//                });
 
                 if (position == currentPageValue.floor()) {
+                  print('from');
                   return Transform.scale(
-                    scale: math.max(scale * 3, 1),
+                    scale: math.max(scale * 6, 1),
                     child: buildPage(position, 'from'),
                   );
                 } else if (position == currentPageValue.floor() + 1) {
+                  print('to');
                   return Transform.scale(
-                    scale: scale * 3,
+                    scale: scale * 6,
                     child: buildPage(position, 'to'),
                   );
                 } else if (position == currentPageValue.floor() - 1) {
+                  print('prev');
                   return buildPage(position, 'previous');
                 } else {
-                  return Container();
+                  print('default');
+                  return Container(
+                    child: Center(child: Text('default')),
+                  );
                 }
               }),
         ),
@@ -207,29 +221,36 @@ class _MyHomePageState extends State<MyHomePage> {
           alignment: Alignment.bottomRight,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: SizedBox(
-              height: 100,
-              width: 70,
-              child: FlatButton(
-                padding: const EdgeInsets.all(0),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-                color: Color(0xFF441FFF),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: <Widget>[
-                    Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                    Text(
-                      "Explore",
-                      style: TextStyle(color: Colors.white, fontSize: 15),
-                    )
-                  ],
+            child: Hero(
+              tag: viruses[currentPageValue.floor()].name,
+              child: SizedBox(
+                height: 100,
+                width: 70,
+                child: FlatButton(
+                  padding: const EdgeInsets.all(0),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
+                  color: Palette.buttonBlue,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                      Text(
+                        "Explore",
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      )
+                    ],
+                  ),
+                  onPressed: () {
+                    /*Navigator.of(context).push(FadeRoute(
+                        page: DetailsPage(
+                            viruses[currentPageValue.floor() % viruses.length])));*/
+                    Navigator.of(context).push(PageRouteBuilder(
+                        transitionDuration: Duration(seconds: 2),
+                        pageBuilder: (_, __, ___) => DetailsPage(
+                            viruses[currentPageValue.floor() % viruses.length])));
+                  },
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(FadeRoute(
-                      page: DetailsPage(
-                          viruses[currentPageValue.floor() % viruses.length])));
-                },
               ),
             ),
           ),
@@ -237,12 +258,4 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
   }
-}
-
-double opacity(double page) {
-  if (page > 0.1) {
-    return (page - 1);
-  }
-
-  return 1.0;
 }

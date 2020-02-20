@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:influenza_example/Constants.dart';
 import 'package:influenza_example/model/Virus.dart';
 
 class DetailsPage extends StatefulWidget {
@@ -22,30 +23,30 @@ class _DetailsPageState extends State<DetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: ()async {
-
-
-        setState(() {
-          heroImageTag = 'remove_hero';
-        });
-        return true;
-      },
+    return Container(
+      decoration: BoxDecoration(
+          gradient: RadialGradient(
+              center: Alignment.topLeft,
+              radius: 2,
+              colors: [Palette.bgGradientStart, Palette.bgGradientEnd])),
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
           children: <Widget>[
             Positioned(
-                right: -100,
+                right: -150,
                 top: 0,
                 bottom: 0,
                 child: Hero(
                   tag: widget.virus.image /*heroImageTag*/,
-                  child: Transform.rotate(
-                    angle: .8,
-                    child: Container(
-                        width: MediaQuery.of(context).size.width * .8,
-                        child: Image.asset(widget.virus.image)),
+                  child: Transform.scale(
+                    scale: 2,
+                    child: Transform.rotate(
+                      angle: .8,
+                      child: Container(
+                          width: MediaQuery.of(context).size.width * .8,
+                          child: Image.asset(widget.virus.image)),
+                    ),
                   ),
                 )),
             Positioned(
@@ -91,25 +92,43 @@ class _DetailsPageState extends State<DetailsPage> {
               alignment: Alignment.bottomRight,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: SizedBox(
-                  height: 100,
-                  width: 70,
-                  child: FlatButton(
-                    padding: const EdgeInsets.all(0),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
-                    color: Color(0xFF441FFF),
+                child: Hero(
+                  tag: widget.virus.name,
+                  child: SizedBox(
+                    height: 150,
+                    width: 70,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: <Widget>[
-                        Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                        Text(
-                          "Explore",
-                          style: TextStyle(color: Colors.white, fontSize: 15),
-                        )
+                        Expanded(
+                          child: FlatButton(
+                            padding: const EdgeInsets.all(0),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15)),
+                            color: Palette.buttonBlue,
+                            child: Icon(Icons.play_arrow,
+                                color: Colors.white, size: 40),
+                            onPressed: () {},
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Expanded(
+                          child: FlatButton(
+                            padding: const EdgeInsets.all(0),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15)),
+                            color: Palette.buttonBlue ,
+                            child: Text(
+                              "Exit",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 15),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ),
                       ],
                     ),
-                    onPressed: () {},
                   ),
                 ),
               ),

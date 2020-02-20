@@ -1,6 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:influenza_example/CustomScrollBehavior.dart';
 import 'package:influenza_example/CustomScrollPhysics.dart';
+import 'package:influenza_example/FadePageRoute.dart';
+import 'package:influenza_example/model/Virus.dart';
+
+import 'DetailsPage.dart';
 
 void main() => runApp(MyApp());
 
@@ -25,19 +31,18 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   static const FULL_SCALE = 1.0;
-  PageController controller = PageController(viewportFraction: .6);
+  PageController controller = PageController(viewportFraction: .4);
   var currentPageValue = 0.0;
   var previousPage;
-  static const images = [
-    'assets/images/influenza_virus.png',
-    'assets/images/virus2.png',
-    'assets/images/virus3.png',
-    'assets/images/virus4.png',
-  ];
+
+  static const Color buttonBlue = Color(0xFF450EFF);
+  static const Color bgGradientStart = Color(0xFF25252B);
+  static const Color bgGradientEnd = Color(0xFF111113);
 
   ValueNotifier<double> pageNotifier;
 
   ScrollPhysics _physics;
+  double scale = 1.0;
 
   @override
   void initState() {
@@ -69,27 +74,51 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-//    print(controller.position);
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: buildPageView(),
+      body: Container(
+          decoration: BoxDecoration(
+              gradient: RadialGradient(
+                  center: Alignment.topLeft,
+                  radius: 2,
+                  colors: [bgGradientStart, bgGradientEnd])),
+          child: buildPageView()),
     );
   }
 
   Widget buildPage(int position, String text) {
-    var imgUrl = images[position % images.length];
+    var imgUrl = viruses[position].image;
+    return Hero(
+      tag: imgUrl,
+      flightShuttleBuilder: (
+        BuildContext flightContext,
+        Animation<double> animation,
+        HeroFlightDirection flightDirection,
+        BuildContext fromHeroContext,
+        BuildContext toHeroContext,
+      ) {
+        final Hero toHero = toHeroContext.widget;
 
-    return Container(
-      color: position % 2 == 0
-          ? Colors.blue.withOpacity(.2)
-          : Colors.pink.withOpacity(.2),
-      child: Center(
-          child: Container(
-              width: MediaQuery.of(context).size.width * .8,
-              child: Image.asset(
-                imgUrl,
-//                    color: position % 2 == 0 ? Colors.blue : Colors.pink,
-              ))),
+        if (flightDirection == HeroFlightDirection.pop) {
+          return Transform.scale(
+            scale: FULL_SCALE - (position - (currentPageValue)).abs(),
+            child: toHero.child,
+          );
+        } else
+          return Transform.rotate(
+            child: toHero.child,
+            angle: animation.value * .2,
+          );
+      },
+      child: Container(
+        child: Center(
+            child: Container(
+                width: MediaQuery.of(context).size.width * .2,
+                height: MediaQuery.of(context).size.width * .2,
+                child: Image.asset(
+                  imgUrl,
+                  fit: BoxFit.cover,
+                ))),
+      ),
     );
   }
 
@@ -100,41 +129,49 @@ class _MyHomePageState extends State<MyHomePage> {
           behavior: MyBehavior(),
           child: PageView.builder(
               controller: controller,
-              itemCount: 10,
+              itemCount: viruses.length,
               scrollDirection: Axis.vertical,
               physics: _physics,
               itemBuilder: (context, position) {
-                final scale =
-                    FULL_SCALE - (position - (currentPageValue)).abs();
+//                setState(() {
+                scale = FULL_SCALE - (position - (currentPageValue)).abs();
+//                });
 
                 if (position == currentPageValue.floor()) {
-                  return Transform.translate(
-                    offset: Offset(0.0, -36.0),
-                    child: Transform.scale(
-                      scale: scale,
-                      child: buildPage(position, 'from'),
-                    ),
+                  return Transform.scale(
+                    scale: math.max(scale * 3, 1),
+                    child: buildPage(position, 'from'),
                   );
                 } else if (position == currentPageValue.floor() + 1) {
-                  return Transform.translate(
-                    offset: Offset(0.0, -36.0),
-                    child: Transform.scale(
-                      scale: scale,
-                      child: buildPage(position, 'to'),
-                    ),
+                  return Transform.scale(
+                    scale: scale * 3,
+                    child: buildPage(position, 'to'),
                   );
+                } else if (position == currentPageValue.floor() - 1) {
+                  return buildPage(position, 'previous');
                 } else {
-                  return buildPage(position, 'default');
+                  return Container();
                 }
               }),
         ),
         Positioned(
           top: MediaQuery.of(context).size.height * .15,
           left: 16,
-          child: Text(
-            'Cold Virus',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w100, fontSize: 40),
+          child: AnimatedOpacity(
+            duration: Duration(microseconds: 300),
+            opacity: math.max(
+                0,
+                1 -
+                    double.parse('0.' +
+                            currentPageValue.toString().split('.').last) *
+                        2),
+            child: Text(
+              viruses[currentPageValue.floor() % viruses.length].name,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w100,
+                  fontSize: 40),
+            ),
           ),
         ),
         Positioned(
@@ -155,7 +192,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16, left: 16),
                   child: Text(
-                      'Fever, runny nose, sore throat, muscle pains, headache,coughing, sneezing, fatigue.',
+                      viruses[currentPageValue.floor() % viruses.length]
+                          .symptoms,
                       style: TextStyle(
                           color: Colors.white.withOpacity(.6),
                           fontWeight: FontWeight.w300,
@@ -187,7 +225,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     )
                   ],
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(FadeRoute(
+                      page: DetailsPage(
+                          viruses[currentPageValue.floor() % viruses.length])));
+                },
               ),
             ),
           ),
